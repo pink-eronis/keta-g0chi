@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>桁ゴチ Web (代替ツール)</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        h1 {
+            color: #ff3b30;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255,59,48,0.4);
+        }
+        label {
+            display: block;
+            text-align: left;
+            margin: 10px 0 5px;
+            font-weight: bold;
+            color: #aaa;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background-color: #2a2a2a;
+            color: #fff;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #ff9500;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        button:hover {
+            background-color: #e68500;
+        }
+        #resultArea {
+            margin-top: 25px;
+            padding: 15px;
+            background: #252525;
+            border-radius: 10px;
+            border-left: 5px solid #ff3b30;
+            text-align: left;
+        }
+        .digit-line {
+            font-size: 20px;
+            margin: 12px 0;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #3a3a3a;
+            display: flex;
+            justify-content: space-between;
+        }
+        .digit-name {
+            color: #007aff;
+            font-weight: bold;
+        }
+        .total-box {
+            margin-top: 15px;
+            padding: 10px;
+            background: #ff3b30;
+            border-radius: 5px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>桁ゴチ Web</h1>
+    
+    <label for="amount">合計お会計金額 (円)</label>
+    <input type="number" id="amount" placeholder="例: 25840" min="1">
+    
+    <label for="members">参加者の名前 (1行に1人ずつ入力)</label>
+    <textarea id="members" rows="5" placeholder="太郎&#10;次郎&#10;花子"></textarea>
+    
+    <button onclick="playKetagochi()">桁ゴチ スタート！</button>
+    
+    <div id="resultArea" style="display:none;">
+        <h2 style="margin-top:0; color:#ff9500;">🔥 運命の結果発表 🔥</h2>
+        <div id="digitsList"></div>
+        <div id="summaryList" style="margin-top:20px; padding-top:15px; border-top:2px dashed #555;"></div>
+    </div>
+</div>
+
+<script>
+function playKetagochi() {
+    const amountInput = document.getElementById('amount').value.trim();
+    const membersInput = document.getElementById('members').value.trim();
+    
+    if (!amountInput || !membersInput) {
+        alert('金額と参加者の名前を入力してください！');
+        return;
+    }
+    
+    const amountStr = String(parseInt(amountInput, 10));
+    const members = membersInput.split('\n').map(m => m.trim()).filter(m => m !== "");
+    
+    if (members.length === 0) {
+        alert('参加者を1人以上入力してください！');
+        return;
+    }
+    
+    const digitsList = document.getElementById('digitsList');
+    const summaryList = document.getElementById('summaryList');
+    digitsList.innerHTML = '';
+    summaryList.innerHTML = '';
+    
+    const len = amountStr.length;
+    const memberBurden = {};
+    members.forEach(m => memberBurden[m] = 0);
+    
+    // 各桁の重み（一、十、百、千、万…）
+    const unitNames = ['一', '十', '百', '千', '万', '十万', '百万', '千万', '億'];
+    
+    // 桁ごとにランダム割り当て
+    for (let i = 0; i < len; i++) {
+        const digitValue = parseInt(amountStr[len - 1 - i], 10); // 下の桁から取得
+        const actualAmount = digitValue * Math.pow(10, i);
+        
+        // ランダムで1人選出
+        const luckyMember = members[Math.floor(Math.random() * members.length)];
+        memberBurden[luckyMember] += actualAmount;
+        
+        // 0円の桁はスキップせず表示（ヒヤヒヤ感を出すため）
+        const unitName = unitNames[i] || `${Math.pow(10, i)}の`;
+        
+        const line = document.createElement('div');
+        line.className = 'digit-line';
+        line.innerHTML = `<span>${unitName}の桁 (${digitValue}) ：</span> <span class="digit-name">${luckyMember} (${actualAmount.toLocaleString()}円)</span>`;
+        digitsList.appendChild(line);
+    }
+    
+    // 個人ごとの合計支払い金額の表示
+    const summaryHeader = document.createElement('h3');
+    summaryHeader.innerText = '💰 各自の支払い合計';
+    summaryHeader.style.margin = '0 0 10px 0';
+    summaryList.appendChild(summaryHeader);
+    
+    for (const [name, total] of Object.entries(memberBurden)) {
+        const p = document.createElement('div');
+        p.style.fontSize = '18px';
+        p.style.margin = '5px 0';
+        p.innerHTML = `<strong>${name}</strong>: <span style="color:#ff9500;">${total.toLocaleString()} 円</span>`;
+        summaryList.appendChild(p);
+    }
+    
+    // お会計総額の再確認
+    const totalBox = document.createElement('div');
+    totalBox.className = 'total-box';
+    totalBox.innerText = `総額：${parseInt(amountInput, 10).toLocaleString()} 円`;
+    summaryList.appendChild(totalBox);
+    
+    document.getElementById('resultArea').style.display = 'block';
+    
+    // スムーズに結果までスクロール
+    document.getElementById('resultArea').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+
+</body>
+</html>
